@@ -118,12 +118,14 @@ object ActionRecord {
 
 
     private def getPlayer(col: String, row: Map[String, String], players: Map[String, Player]): Player = {
-        val name = row.get(col).getOrElse(throw new Exception("Not found: " + col + ", row: " + row)).toUpperCase();
-        return players.get(name).getOrElse(throw new Exception("Player not found: " + name + ", row: " + row));
+        val name = row.get(col).getOrElse(throw new Exception("Not found: " + col + ", row: " + row));
+
+        return players.get(Universe.fixNames(name)).getOrElse(throw new Exception("Player not found: " + name + ", row: " + row));
     }
     private def getPlayerOpt(col: String, row: Map[String, String], players: Map[String, Player]): Option[Player] = {
         val name = row.get(col).getOrElse(throw new Exception("Not found: " + col + ", row: " + row)).toUpperCase();
-        return players.get(name);
+
+        return players.get(Universe.fixNames(name));
     }
 
     private def getXY(row: Map[String, String]): Option[(Int, Int)] = {

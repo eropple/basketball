@@ -131,8 +131,6 @@ object Heatmapper {
 
             graphics.setColor(new Color(intensity.asInstanceOf[Float], 0.0f, 0.0f));
             graphics.fillRect(pX, pY, squareSize, squareSize);
-
-            println(location, (pX, pY));
         })
 
         return Some(image);

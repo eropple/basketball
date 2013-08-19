@@ -8,7 +8,9 @@ import java.awt.image.RenderedImage
 
 object EntryPoint {
     def main(args: Array[String]): Unit = {
-        val universe = new Universe(Seq(new File("/tmp/2013-06-06-SAN@MIA.csv")));
+        val directory = new File("/tmp/12-13");
+
+        val universe = new Universe(directory.listFiles().toSeq);
 
         val heatmapper = new Heatmapper(universe);
 
