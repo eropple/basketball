@@ -30,28 +30,63 @@ class Heatmapper(val universe: Universe, val useEffectiveFGPct: Boolean = true, 
     private def constructDrawables(shots: Seq[ShotRecord]): Seq[((Int, Int), (Double, Double))] = {
         val locations = Heatmapper.collectShotLocations(shots);
 
-        var most_shots: Double = 0;
+        var fewest_shots: Double = Double.PositiveInfinity;
+        var most_shots: Double = Double.NegativeInfinity;
+        var worst_efficiency: Double = Double.PositiveInfinity;
+        var best_efficiency: Double = Double.NegativeInfinity;
         locations.foreach(t => {
             most_shots = math.max(most_shots, t._2.size);
+
+            val totalShots: Double = t._2.size;
+            val makes: Double = t._2.count(shot => shot.made);
+            val three_makes: Double = t._2.count(shot => shot.shotType.equals("3pt"));
+
+            val efficiency: Double = if (useEffectiveFGPct) {
+                (makes + (three_makes * 0.5)) / totalShots;
+            } else (makes / totalShots);
+
+            best_efficiency = math.max(best_efficiency, efficiency);
+            worst_efficiency = math.min(worst_efficiency, efficiency);
+            fewest_shots = math.min(fewest_shots, t._2.size);
         });
+
+        val shot_range: Double = most_shots - fewest_shots;
+        val efficiency_range: Double = best_efficiency - worst_efficiency;
+
+        val buckets: Seq[(Float, Float, Float)] = Seq(
+            (1.0f, 0.8f, 0.975f),
+            (0.8f, 0.6f, 0.8f),
+            (0.6f, 0.4f, 0.6f),
+            (0.4f, 0.2f, 0.4f),
+            (0.2f, 0.00f, 0.2f)
+        );
 
         val list = new ListBuffer[((Int, Int), (Double, Double))];
         locations.foreach(t => {
-            val makes: Double = t._2.count(shot => shot.made);
-            val three_makes: Double = t._2.count(shot => shot.shotType.equals("3pt"));
             val totalShots: Double = t._2.size;
 
-            val drawSize: Double = t._2.size / most_shots; // 1.0 being full size
+            if (totalShots > 1)
+            {
+                val makes: Double = t._2.count(shot => shot.made);
+                val three_makes: Double = t._2.count(shot => shot.shotType.equals("3pt"));
 
-            var drawColor: Double = makes / totalShots;
-            if (useEffectiveFGPct) {
-                val oldDrawColor = drawColor;
-                drawColor = (makes + (three_makes * 0.5)) / totalShots;
+                val frequency: Double = (totalShots - fewest_shots) / shot_range;
+                var drawSize: Double = 0;
+                buckets.foreach(t => {
+                    if (frequency > t._2 && frequency <= t._1) drawSize = t._3;
+                })
+
+                val efficiency: Double = if (useEffectiveFGPct) {
+                    (makes + (three_makes * 0.5)) / totalShots;
+                } else (makes / totalShots);
+
+//                val drawIntensity: Double = (efficiency - worst_efficiency) / efficiency_range;
+//                println(efficiency, drawIntensity);
+
+                val drawTuple = (drawSize, math.min(efficiency, 1.0));
+
+                list += ((t._1, drawTuple));
             }
-
-            val drawTuple = (drawSize, math.min(drawColor, 1.0));
-
-            list += ((t._1, drawTuple));
         });
 
         return list.toSeq
@@ -122,22 +157,26 @@ object Heatmapper {
 
         drawables.foreach(drawable => {
             val location = drawable._1;
-            val size = drawable._2._1;
-            val intensity = drawable._2._2;
+            val size = math.min(drawable._2._1.asInstanceOf[Float], 0.9f);
+            val intensity = drawable._2._2.asInstanceOf[Float];
 
-            val squareSize: Int = math.round(pixelsPerFoot * size.asInstanceOf[Float]);
-
-            var pX = location._1 * pixelsPerFoot;
-            var pY = height - (location._2 * pixelsPerFoot);
-            if (size != 1.0)
+            if (size > 0)
             {
-                val pOff = (pixelsPerFoot - squareSize) / 2;
-                pY += pOff;
-                pX += pOff;
-            }
+                val squareSize: Int = math.round(pixelsPerFoot * size);
 
-            graphics.setColor(new Color(intensity.asInstanceOf[Float], 0.0f, 0.0f));
-            graphics.fillRect(pX, pY, squareSize, squareSize);
+                val pOff = (pixelsPerFoot - squareSize) / 2;
+
+                var pX = location._1 * pixelsPerFoot;
+                var pY = height - (location._2 * pixelsPerFoot);
+                var pYOff = pY + pOff;
+                var pXOff = pX + pOff;
+
+                graphics.setColor(new Color(intensity * 0.8f + 0.2f, 0.0f, 0.0f,
+                                            1.0f));
+//                graphics.fillRect(pX, pY, pixelsPerFoot, pixelsPerFoot);
+//                graphics.setColor(new Color(1.0f, 1.0f, 1.0f, 1.0f));
+                graphics.fillRect(pXOff, pYOff, squareSize, squareSize);
+            }
         })
 
         return Some(image);
