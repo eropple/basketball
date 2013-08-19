@@ -11,7 +11,7 @@ import java.io.File
 case class HeatmapResult(val player: Player, val image: Option[RenderedImage],
                          val plottedShots: Seq[ShotRecord], val unplottedShots: Seq[ShotRecord]);
 
-class Heatmapper(val universe: Universe, val pixelsPerFoot: Int = 10) {
+class Heatmapper(val universe: Universe, val useEffectiveFGPct: Boolean = true, val pixelsPerFoot: Int = 10) {
     def buildHeatmap(name: String): HeatmapResult =
         buildHeatmap(universe.getPlayerByName(name).getOrElse(throw new Exception("player not found: " + name)));
     def buildHeatmap(player: Player): HeatmapResult = {
@@ -38,11 +38,18 @@ class Heatmapper(val universe: Universe, val pixelsPerFoot: Int = 10) {
         val list = new ListBuffer[((Int, Int), (Double, Double))];
         locations.foreach(t => {
             val makes: Double = t._2.count(shot => shot.made);
+            val three_makes: Double = t._2.count(shot => shot.shotType.equals("3pt"));
             val totalShots: Double = t._2.size;
 
             val drawSize: Double = t._2.size / most_shots; // 1.0 being full size
-            val drawColor: Double = makes / totalShots;
-            val drawTuple = (drawSize, drawColor);
+
+            var drawColor: Double = makes / totalShots;
+            if (useEffectiveFGPct) {
+                val oldDrawColor = drawColor;
+                drawColor = (makes + (three_makes * 0.5)) / totalShots;
+            }
+
+            val drawTuple = (drawSize, math.min(drawColor, 1.0));
 
             list += ((t._1, drawTuple));
         });

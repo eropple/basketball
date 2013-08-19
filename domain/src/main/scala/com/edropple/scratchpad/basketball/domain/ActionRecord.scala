@@ -14,7 +14,7 @@ class ShotRecord(homePlayers: List[Player], awayPlayers: List[Player],
                  period: Int, time: Int,
                  teamAction: Team, homeTeamName: String, awayTeamName: String,
                  val shootingPlayer: Player, val assistingPlayer: Option[Player],
-                 val made: Boolean, val points: Int,
+                 val made: Boolean, val points: Int, val shotType: String,
                  val xy: Option[(Int, Int)]) extends ActionRecord(homePlayers, awayPlayers, period, time,
                                                                   teamAction, homeTeamName, awayTeamName)
 {
@@ -86,7 +86,7 @@ object ActionRecord {
         }
 
 
-        val nameType = row.get("etype").getOrElse(throw new Exception("type missing from row" + ", row: " + row))
+        val nameType = row.get("etype").getOrElse(throw new Exception("etype missing from row" + ", row: " + row))
         nameType match {
             case "shot" => {
                 val shootingPlayer: Player = getPlayer("player", row, players);
@@ -94,6 +94,8 @@ object ActionRecord {
 
                 val pText = row.get("points").getOrElse("0");
                 val points: Int = if (pText.size == 0) 0 else pText.toInt
+
+                val shotType: String = row.get("type").getOrElse(throw new Exception("shot type missing from row" + ", row: " + row)).trim.toLowerCase;
 
                 val made: Boolean = if (points > 0) {
                     row.get("result").getOrElse(throw new Exception("result column missing" + ", row: " + row)) match {
@@ -107,7 +109,7 @@ object ActionRecord {
 
                 return Some(new ShotRecord(homePlayers.toList, awayPlayers.toList, period, time,
                                            teamAction, homeTeamName, awayTeamName,
-                                           shootingPlayer, assistingPlayer, made, points, xy));
+                                           shootingPlayer, assistingPlayer, made, points, shotType, xy));
             }
 
             // This can be extended later to add more
