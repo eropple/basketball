@@ -1,0 +1,12 @@
+basketball
+==========
+
+I do a little bit of dabbling in sports analysis, and this repo will contain my
+basketball-related code, such as the following:
+
+domain - Domain-specific objects for parsing game logs.
+heatmapper-core - Core system for plotting shooting heat maps.
+heatmapper-runner - (unfinished) command-line tool for invoking heatmapper.
+
+
+-Ed (ed+basketball@edropple.com)
